@@ -14,10 +14,8 @@ public:
     vector<TreeNode*> nodes;
 
     TreeNode* balanceBST(TreeNode* root) {
-        // 1. Collect nodes in sorted order
+    
         storeNodes(root);
-        
-        // 2. Build balanced tree from sorted vector
         return buildTree(0, nodes.size() - 1);
     }
 
@@ -32,11 +30,10 @@ private:
     TreeNode* buildTree(int start, int end) {
         if (start > end) return nullptr;
 
-        // Pick the middle node to ensure balance
+    
         int mid = start + (end - start) / 2;
         TreeNode* node = nodes[mid];
 
-        // Recursively build subtrees
         node->left = buildTree(start, mid - 1);
         node->right = buildTree(mid + 1, end);
 
