@@ -4,33 +4,33 @@ public:
         int n = s.length();
         int maxLen = 0;
 
-        for (int numDistinct = 1; numDistinct <= 26; ++numDistinct) {
-            for (int freq = 1; freq * numDistinct <= n; ++freq) {
-                int windowSize = numDistinct * freq;
-                vector<int> count(26, 0);
-                int distinctInWindow = 0;
-                int countWithFreq = 0;
+        for (int i = 0; i < n; ++i) {
+            int counts[26] = {0};
+            int distinct = 0;
+            int maxFreq = 0;
 
-                for (int i = 0; i < n; ++i) {
-                    // Add new character
-                    int addIdx = s[i] - 'a';
-                    if (count[addIdx] == 0) distinctInWindow++;
-                    count[addIdx]++;
-                    if (count[addIdx] == freq) countWithFreq++;
-                    else if (count[addIdx] == freq + 1) countWithFreq--;
+            for (int j = i; j < n; ++j) {
+                int idx = s[j] - 'a';
+                if (counts[idx] == 0) {
+                    distinct++;
+                }
+                counts[idx]++;
+                
+                // Track the frequency of the current character
+                // A balanced string must have: length == distinct * current_frequency
+                int currentFreq = counts[idx];
+                int length = j - i + 1;
 
-                    // Remove character sliding out
-                    if (i >= windowSize) {
-                        int remIdx = s[i - windowSize] - 'a';
-                        if (count[remIdx] == freq) countWithFreq--;
-                        count[remIdx]--;
-                        if (count[remIdx] == freq) countWithFreq++;
-                        if (count[remIdx] == 0) distinctInWindow--;
+                if (length == distinct * currentFreq) {
+                    bool balanced = true;
+                    for (int k = 0; k < 26; ++k) {
+                        if (counts[k] > 0 && counts[k] != currentFreq) {
+                            balanced = false;
+                            break;
+                        }
                     }
-
-                    // Check if current window is balanced
-                    if (distinctInWindow == numDistinct && countWithFreq == numDistinct) {
-                        maxLen = max(maxLen, windowSize);
+                    if (balanced) {
+                        maxLen = max(maxLen, length);
                     }
                 }
             }
