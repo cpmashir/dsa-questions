@@ -8,78 +8,68 @@ using namespace std;
 class Solution {
 public:
     int longestBalanced(string s) {
-        int n = s.length();
-        int maxLen = 0;
+        int n = s.length(), maxLen = 0;
 
-        // We check every possible set of characters that could be 'distinct' in a substring
-        // There are 7 combinations: {a}, {b}, {c}, {ab}, {ac}, {bc}, {abc}
-        vector<string> combos = {"a", "b", "c", "ab", "ac", "bc", "abc"};
+        // 1. Single character case
+        int run = 0;
+        for (int i = 0; i < n; i++) {
+            run = (i > 0 && s[i] == s[i-1]) ? run + 1 : 1;
+            maxLen = max(maxLen, run);
+        }
 
-        for (const string& combo : combos) {
-            // Using a simple array-based hash for 2-char combos or a map for 3-char
-            maxLen = max(maxLen, solve(s, combo));
+        // 2. Substrings with exactly TWO distinct characters
+        auto solve2 = [&](char c1, char c2) {
+            unordered_map<int, int> seen;
+            seen[0] = -1;
+            int diff = 0, last1 = -1, last2 = -1, lastOther = -1;
+            
+            for (int i = 0; i < n; i++) {
+                if (s[i] == c1) { diff++; last1 = i; }
+                else if (s[i] == c2) { diff--; last2 = i; }
+                else {
+                    // This character is not part of our pair. 
+                    // To ensure the substring only has c1 and c2 as DISTINCT chars,
+                    // we must "cut" the window here.
+                    seen.clear();
+                    diff = 0;
+                    seen[0] = i;
+                    last1 = last2 = -1;
+                    continue;
+                }
+
+                if (seen.count(diff)) {
+                    int prev = seen[diff];
+                    // Must contain BOTH characters to have 2 distinct chars
+                    if (last1 > prev && last2 > prev) {
+                        maxLen = max(maxLen, i - prev);
+                    }
+                } else {
+                    seen[diff] = i;
+                }
+            }
+        };
+
+        solve2('a', 'b');
+        solve2('a', 'c');
+        solve2('b', 'c');
+
+        // 3. Substrings with exactly THREE distinct characters
+        unordered_map<long long, int> seen3;
+        seen3.reserve(n);
+        seen3[0] = -1;
+        int ca = 0, cb = 0, cc = 0, la = -1, lb = -1, lc = -1;
+        for (int i = 0; i < n; i++) {
+            if (s[i] == 'a') { ca++; la = i; }
+            else if (s[i] == 'b') { cb++; lb = i; }
+            else { cc++; lc = i; }
+
+            long long key = ((long long)(ca - cb) << 32) | (unsigned int)(cb - cc);
+            if (seen3.count(key)) {
+                int p = seen3[key];
+                if (la > p && lb > p && lc > p) maxLen = max(maxLen, i - p);
+            } else seen3[key] = i;
         }
 
         return maxLen;
-    }
-
-private:
-    int solve(const string& s, const string& target) {
-        // Use a hash map to store the first time a specific 'difference state' is seen
-        // We use a long long to pack (countA-countB) and (countB-countC)
-        unordered_map<long long, int> firstSeen;
-        firstSeen[0] = -1; // Base case: all counts are 0 at index -1
-
-        int counts[3] = {0, 0, 0};
-        int lastSeen[3] = {-1, -1, -1};
-        int localMax = 0;
-
-        for (int i = 0; i < s.length(); ++i) {
-            int cur = s[i] - 'a';
-            
-            // If character is not in our target set, reset the state
-            if (target.find(s[i]) == string::npos) {
-                firstSeen.clear();
-                firstSeen[0] = i;
-                counts[0] = counts[1] = counts[2] = 0;
-                continue;
-            }
-
-            counts[cur]++;
-            lastSeen[cur] = i;
-
-            // Generate a unique key based on the differences
-            long long key = 0;
-            if (target.length() == 1) {
-                key = 0; // Any sequence of one char is balanced
-            } else if (target.length() == 2) {
-                // Get the two chars in the combo
-                int c1 = target[0] - 'a';
-                int c2 = target[1] - 'a';
-                key = counts[c1] - counts[c2];
-            } else {
-                // For abc, we need two differences: (a-b) and (b-c)
-                long long diff1 = counts[0] - counts[1];
-                long long diff2 = counts[1] - counts[2];
-                key = (diff1 << 32) | (diff2 & 0xFFFFFFFFLL);
-            }
-
-            if (firstSeen.count(key)) {
-                int prevIdx = firstSeen[key];
-                // CRITICAL: Substring is only valid if ALL target characters 
-                // have appeared at least once since the prevIdx
-                bool valid = true;
-                for (char c : target) {
-                    if (lastSeen[c - 'a'] <= prevIdx) {
-                        valid = false;
-                        break;
-                    }
-                }
-                if (valid) localMax = max(localMax, i - prevIdx);
-            } else {
-                firstSeen[key] = i;
-            }
-        }
-        return localMax;
     }
 };
